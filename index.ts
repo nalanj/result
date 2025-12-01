@@ -28,3 +28,11 @@ export function err<E>(e: E): Err<E> {
 export function isErr<E>(r: Result<unknown, E>): r is Err<E> {
 	return r[okSym] === false;
 }
+
+export function unwrap<T, E>(r: Result<T, E>): T {
+	if (isOK(r)) {
+		return r[valSym];
+	}
+
+	throw r[valSym];
+}
