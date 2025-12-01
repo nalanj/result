@@ -1,0 +1,26 @@
+{
+	"name": "result",
+	"version": "0.0.0",
+	"description": "Try-free result handling for TypeScript",
+	"keywords": ["typescript", "fp", "functional", "exceptions"],
+	"homepage": "https://github.com/nalanj/result#readme",
+	"bugs": {
+		"url": "https://github.com/nalanj/result/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/nalanj/result.git"
+	},
+	"license": "MIT",
+	"author": "Alan Johnson <nalanj@fastmail.com>",
+	"type": "module",
+	"main": "dist/index.js",
+	"scripts": {
+		"build": "npx tsc",
+		"test": "node --test"
+	},
+	"devDependencies": {
+		"@types/node": "24.10.1",
+		"typescript": "5.9.3"
+	}
+}
