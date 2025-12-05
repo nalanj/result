@@ -1,38 +1,42 @@
-const okSym = Symbol("OK");
-const valSym = Symbol("Value");
-
-export type OK<T> = {
-	[okSym]: true;
-	[valSym]: T;
+type OK<T> = {
+	readonly ok: true;
+	readonly value: T;
 };
 
-export type Err<E> = {
-	[okSym]: false;
-	[valSym]: E;
+type Err<E> = {
+	readonly ok: false;
+	readonly err: E;
 };
 
 export type Result<T, E> = OK<T> | Err<E>;
 
 export function ok<T>(t: T): OK<T> {
-	return { [okSym]: true, [valSym]: t };
-}
+	return {
+		get ok(): true {
+			return true;
+		},
 
-export function isOK<T, E>(r: Result<T, E>): r is OK<T> {
-	return r[okSym] === true;
+		get value(): T {
+			return t;
+		},
+	};
 }
 
 export function err<E>(e: E): Err<E> {
-	return { [okSym]: false, [valSym]: e };
-}
-
-export function isErr<E>(r: Result<unknown, E>): r is Err<E> {
-	return r[okSym] === false;
+	return {
+		get ok(): false {
+			return false;
+		},
+		get err(): E {
+			return e;
+		},
+	};
 }
 
 export function unwrap<T, E>(r: Result<T, E>): T {
-	if (isOK(r)) {
-		return r[valSym];
+	if (r.ok) {
+		return r.value;
+	} else {
+		throw r.err;
 	}
-
-	throw r[valSym];
 }

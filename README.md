@@ -16,6 +16,8 @@ Creates an `OK` value representing a successful result.
 import { ok } from "@nalanj/result";
 
 const result = ok(12);
+console.log(result.ok); // true
+console.log(result.value); // 12
 ``` 
 
 ### err(error: E): Err<E>
@@ -30,24 +32,10 @@ While you will very often have an `Err<Error>` as a type to wrap exceptions, it'
 ```typescript
 import { err } from "@nalanj/result";
 
-const result = err(12);
+const result = err("It broke");
+console.log(result.ok); // false
+console.log(result.err); // It broke
 ```
-
-### isOK
-
-#### Example
-
-```typescript
-import { ok, err, isOK } from "@nalanj/result";
-
-const good = ok("Good");
-if (isOK(good)) {
-  console.log("It's good")
-}
-```
-
-
-### isErr
 
 ### unwrap<T, E>(result: Result<T, E>): T
 
@@ -59,7 +47,7 @@ Returns a value of type `T` or throws an error.
 import { ok, err, unwrap } from "@nalanj/result";
 
 const good = ok("Good");
-console.log(unwrap(good));
+console.log(unwrap(good)); // Good
 
 const bad = err("So bad");
 
