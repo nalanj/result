@@ -11,26 +11,11 @@ type Err<E> = {
 export type Result<T, E> = OK<T> | Err<E>;
 
 export function ok<T>(t: T): OK<T> {
-	return {
-		get ok(): true {
-			return true;
-		},
-
-		get value(): T {
-			return t;
-		},
-	};
+	return { ok: true, value: t };
 }
 
 export function err<E>(e: E): Err<E> {
-	return {
-		get ok(): false {
-			return false;
-		},
-		get err(): E {
-			return e;
-		},
-	};
+	return { ok: false, err: e };
 }
 
 export function unwrap<T, E>(r: Result<T, E>): T {
