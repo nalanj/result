@@ -1,0 +1,18 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  npm:install:
+    sources:
+      - package.json
+    generates:
+      - package-lock.json
+    cmds:
+      - npm install
+
+  test:
+    needs:
+      - npm:install
+    cmds:
+      - node --test

@@ -1,9 +1,9 @@
-type OK<T> = {
+export type OK<T> = {
 	readonly ok: true;
 	readonly value: T;
 };
 
-type Err<E> = {
+export type Err<E> = {
 	readonly ok: false;
 	readonly err: E;
 };

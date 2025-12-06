@@ -15,10 +15,6 @@
 	"author": "Alan Johnson <nalanj@fastmail.com>",
 	"type": "module",
 	"main": "dist/index.js",
-	"scripts": {
-		"build": "npx tsc",
-		"test": "node --test"
-	},
 	"devDependencies": {
 		"@types/node": "24.10.1",
 		"typescript": "5.9.3"
