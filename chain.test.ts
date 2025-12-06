@@ -11,6 +11,19 @@ function errCause(cause: string) {
 	return `It broke because: ${cause}`;
 }
 
+describe("inspect", () => {
+	it("calls the fn and passes on the result", () => {
+		let called = false;
+
+		chain(ok("Testing")).inspect((r) => {
+			assert.ok(r.ok);
+			called = true;
+		});
+
+		assert.ok(called);
+	});
+});
+
 describe("map", () => {
 	it("handles OK", () => {
 		const res = ok("Alan") as Result<string, string>;
