@@ -3,14 +3,6 @@ import { describe, it } from "node:test";
 import { chain } from "./chain.ts";
 import { err, ok, type Result } from "./index.ts";
 
-function hello(name: string) {
-	return `Hello ${name}`;
-}
-
-function errCause(cause: string) {
-	return `It broke because: ${cause}`;
-}
-
 describe("inspect", () => {
 	it("calls the fn and passes on the result", () => {
 		let called = false;
@@ -28,16 +20,16 @@ describe("map", () => {
 	it("handles OK", () => {
 		const res = ok("Alan") as Result<string, string>;
 
-		const mapped = chain(res).map(hello);
+		const mapped = chain(res).map((name: string) => `Hello ${name}`);
 
 		assert.ok(mapped.ok);
 		assert.equal(mapped.value, "Hello Alan");
 	});
 
-	it("handles Err", () => {
+	it("ignores Err", () => {
 		const res = err("It broke") as Result<string, string>;
 
-		const mapped = chain(res).map(hello);
+		const mapped = chain(res).map((name: string) => `Hello ${name}`);
 
 		assert.ok(!mapped.ok);
 		assert.equal(mapped.err, "It broke");
@@ -45,10 +37,12 @@ describe("map", () => {
 });
 
 describe("mapErr", () => {
-	it("handles OK", () => {
+	it("ignores OK", () => {
 		const res = ok("Alan") as Result<string, string>;
 
-		const mapped = chain(res).mapErr(errCause);
+		const mapped = chain(res).mapErr(
+			(cause: string) => `It broke because ${cause}`,
+		);
 		assert.ok(mapped.ok);
 		assert.equal(mapped.value, "Alan");
 	});
@@ -56,8 +50,64 @@ describe("mapErr", () => {
 	it("handles Err", () => {
 		const res = err("a crash");
 
-		const mapped = chain(res).mapErr(errCause);
+		const mapped = chain(res).mapErr(
+			(cause: string) => `It broke because ${cause}`,
+		);
 		assert.ok(!mapped.ok);
-		assert.equal(mapped.err, "It broke because: a crash");
+		assert.equal(mapped.err, "It broke because a crash");
+	});
+});
+
+describe("andThen", () => {
+	it("handles OK", () => {
+		const res = ok("Alan") as Result<string, string>;
+
+		const andThenned = chain(res).andThen((r) => ok(`Hello ${r.value}`));
+
+		assert.ok(andThenned.ok);
+		assert.equal(andThenned.value, "Hello Alan");
+	});
+
+	it("ignores Err", () => {
+		const res = err("Ugh") as Result<string, string>;
+
+		const andThenned = chain(res).andThen((r) => ok(`Hello ${r.value}`));
+
+		assert.ok(!andThenned.ok);
+		assert.equal(andThenned.err, "Ugh");
+	});
+});
+
+describe("orElse", () => {
+	it("ignores OK", () => {
+		const res = ok("Alan") as Result<string, string>;
+
+		const orElsed = chain(res).orElse((r) => err(`Or elsed: ${r.err}`));
+
+		assert.ok(orElsed.ok);
+		assert.equal(orElsed.value, "Alan");
+	});
+
+	it("handles Err", () => {
+		const res = err("Ugh") as Result<string, string>;
+
+		const orElsed = chain(res).orElse((r) => err(`Or elsed: ${r.err}`));
+
+		assert.ok(!orElsed.ok);
+		assert.equal(orElsed.err, "Or elsed: Ugh");
+	});
+});
+
+describe("unwrap", () => {
+	it("returns value for OK", () => {
+		const res = ok("Alan") as Result<string, string>;
+
+		assert.equal(chain(res).unwrap(), "Alan");
+	});
+
+	it("throws for Err", () => {
+		const res = err("Ugh") as Result<string, string>;
+
+		assert.throws(() => chain(res).unwrap());
 	});
 });
