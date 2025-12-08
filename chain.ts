@@ -1,11 +1,13 @@
 import { type Err, err, type OK, ok, type Result } from "./index.ts";
 
-export type ResultChain<T, E> = Result<T, E> & {
+export type ResultChain<T, E> = {
 	inspect(fn: (r: Result<T, E>) => void): ResultChain<T, E>;
 	map<U>(fn: (t: T) => U): ResultChain<U, E>;
 	mapErr<S>(fn: (e: E) => S): ResultChain<T, S>;
 	andThen<U>(fn: (r: OK<T>) => Result<U, E>): ResultChain<U, E>;
 	orElse<S>(fn: (r: Err<E>) => Result<T, S>): ResultChain<T, S>;
+
+	result(): Result<T, E>;
 	unwrap(): T;
 };
 
@@ -29,6 +31,7 @@ function okChain<T, E>(r: OK<T>): ResultChain<T, E> {
 		mapErr: (_) => chain(r),
 		andThen: (fn) => chain(fn(r)),
 		orElse: (_) => chain(r),
+		result: () => r,
 		unwrap: () => r.value,
 	};
 
@@ -47,6 +50,7 @@ function errChain<T, E>(r: Err<E>): ResultChain<T, E> {
 		mapErr: (fn) => chain(err(fn(r.err))),
 		andThen: (_) => chain(r),
 		orElse: (fn) => chain(fn(r)),
+		result: () => r,
 		unwrap: () => {
 			throw r.err;
 		},
