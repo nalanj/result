@@ -16,3 +16,9 @@ tasks:
       - npm:install
     cmds:
       - node --test
+
+  test:coverage:
+    needs:
+      - npm:install
+    cmds:
+      - node --experimental-test-coverage --test

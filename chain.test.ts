@@ -4,7 +4,7 @@ import { chain } from "./chain.ts";
 import { err, ok, type Result } from "./index.ts";
 
 describe("inspect", () => {
-	it("calls the fn and passes on the result", () => {
+	it("calls the fn and passes on the result for ok", () => {
 		let called = false;
 
 		chain(ok("Testing")).inspect((r) => {
@@ -14,14 +14,36 @@ describe("inspect", () => {
 
 		assert.ok(called);
 	});
+
+	it("calls the fn and passes on the result for err", () => {
+		let called = false;
+
+		chain(err("Testing")).inspect((r) => {
+			assert.ok(!r.ok);
+			called = true;
+		});
+
+		assert.ok(called);
+	});
 });
 
 describe("inspectAsync", () => {
-	it("calls the fn and passes the result", async () => {
+	it("calls the fn and passes the result for ok", async () => {
 		let called = false;
 
 		chain(ok("Testing")).inspectAsync(async (r) => {
 			assert.ok(r.ok);
+			called = true;
+		});
+
+		assert.ok(called);
+	});
+
+	it("calls the fn and passes the result for err", async () => {
+		let called = false;
+
+		chain(err("Testing")).inspectAsync(async (r) => {
+			assert.ok(!r.ok);
 			called = true;
 		});
 
