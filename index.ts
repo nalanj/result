@@ -1,3 +1,5 @@
+export { chain } from "./chain.ts";
+
 export type OK<T> = {
 	readonly ok: true;
 	readonly value: T;
