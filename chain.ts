@@ -1,8 +1,20 @@
 import { type Err, err, type OK, ok, type Result, unwrap } from "./index.ts";
 
 export type ResultChain<T, E> = {
+	/**
+	 * Calls the given function on the current result in the chain and returns
+	 * a chain with the same `Result`. It's useful for cases like logging
+	 * a value in a chain.
+	 */
 	inspect(fn: (r: Result<T, E>) => void): ResultChain<T, E>;
+
+	/**
+	 * Calls the given async function on the current result in the chain and
+	 * returns an async chain with the same `Result`. It's useful for cases like
+	 * asynchronously recording a value in a chain.
+	 */
 	inspectAsync(fn: (r: Result<T, E>) => Promise<void>): AsyncResultChain<T, E>;
+
 	map<U>(fn: (t: T) => U): ResultChain<U, E>;
 	mapAsync<U>(fn: (t: T) => Promise<U>): AsyncResultChain<U, E>;
 	mapErr<S>(fn: (e: E) => S): ResultChain<T, S>;
@@ -21,7 +33,18 @@ export type ResultChain<T, E> = {
 };
 
 export type AsyncResultChain<T, E> = {
+	/**
+	 * Calls the given function on the current result in the chain and returns
+	 *	a chain with the same `Result`. It's useful for cases like logging
+	 * a value in a chain.
+	 */
 	inspect(fn: (r: Result<T, E>) => void): AsyncResultChain<T, E>;
+
+	/**
+	 * Calls the given async function on the current result in the chain and
+	 * returns an async chain with the same `Result`. It's useful for cases like
+	 * asynchronously recording a value in a chain.
+	 */
 	inspectAsync(fn: (r: Result<T, E>) => Promise<void>): AsyncResultChain<T, E>;
 	map<U>(fn: (t: T) => U): AsyncResultChain<U, E>;
 	mapAsync<U>(fn: (t: T) => Promise<U>): AsyncResultChain<U, E>;
@@ -40,6 +63,13 @@ export type AsyncResultChain<T, E> = {
 	unwrap(): Promise<T>;
 };
 
+/**
+ * Chain takes a result and allows for chained calls against it. Chain itself
+ * always returns a `ResultChain`, but chained calls may return a `ResultChain`
+ * or `AsyncResultChain` depending on if the chained function is async or not. Once
+ * an async function is called, the remaining calls always return an
+ * `AsyncResultChain`.
+ */
 export function chain<T, E>(r: T | Result<T, E>): ResultChain<T, E> {
 	if (typeof r !== "object" || r === null || !("ok" in r)) {
 		r = ok(r);
@@ -70,7 +100,7 @@ export function syncChain<T, E>(r: Result<T, E>): ResultChain<T, E> {
 	};
 }
 
-export function asyncChain<T, E>(
+function asyncChain<T, E>(
 	promise: Promise<Result<T, E>>,
 ): AsyncResultChain<T, E> {
 	return {
