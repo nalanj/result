@@ -1,280 +1,561 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { chain } from "./chain.ts";
+import { chain, asyncChain } from "./chain.ts";
 import { err, ok, type Result } from "./index.ts";
 
-describe("inspect", () => {
-	it("calls the fn and passes on the result for ok", () => {
-		let called = false;
+describe("chain", () => {
+	describe("result", () => {
+		it("returns the result", () => {
+			const res = chain(ok("Testing")).result();
 
-		chain(ok("Testing")).inspect((r) => {
-			assert.ok(r.ok);
-			called = true;
+			assert.ok(res.ok);
+			assert.equal(res.value, "Testing");
+		});
+	});
+
+	describe("inspect", () => {
+		it("calls the fn and passes on the result for ok", () => {
+			let called = false;
+
+			const res = chain(ok("Testing"))
+				.inspect((r) => {
+					assert.ok(r.ok);
+					called = true;
+				})
+				.result();
+
+			assert.ok(called);
+			assert.ok(res.ok);
 		});
 
-		assert.ok(called);
-	});
+		it("calls the fn and passes on the result for err", () => {
+			let called = false;
 
-	it("calls the fn and passes on the result for err", () => {
-		let called = false;
+			const res = chain(err("Testing"))
+				.inspect((r) => {
+					assert.ok(!r.ok);
+					called = true;
+				})
+				.result();
 
-		chain(err("Testing")).inspect((r) => {
-			assert.ok(!r.ok);
-			called = true;
+			assert.ok(called);
+			assert.ok(!res.ok);
 		});
 
-		assert.ok(called);
+		describe("inspectAsync", () => {
+			it("calls the fn and passes the result for ok", async () => {
+				let called = false;
+
+				const res = await chain(ok("Testing"))
+					.inspectAsync(async (r) => {
+						assert.ok(r.ok);
+						called = true;
+					})
+					.result();
+
+				assert.ok(called);
+				assert.ok(res.ok);
+			});
+
+			it("calls the fn and passes the result for err", async () => {
+				let called = false;
+
+				const res = await chain(err("Testing"))
+					.inspectAsync(async (r) => {
+						assert.ok(!r.ok);
+						called = true;
+					})
+					.result();
+
+				assert.ok(called);
+				assert.ok(!res.ok);
+			});
+		});
 	});
-});
 
-describe("inspectAsync", () => {
-	it("calls the fn and passes the result for ok", async () => {
-		let called = false;
+	describe("map", () => {
+		it("handles OK", () => {
+			const res = ok("Alan") as Result<string, string>;
 
-		chain(ok("Testing")).inspectAsync(async (r) => {
-			assert.ok(r.ok);
-			called = true;
+			const mapped = chain(res)
+				.map((name: string) => `Hello ${name}`)
+				.result();
+
+			assert.ok(mapped.ok);
+			assert.equal(mapped.value, "Hello Alan");
 		});
 
-		assert.ok(called);
+		it("ignores Err", () => {
+			const res = err("It broke") as Result<string, string>;
+
+			const mapped = chain(res)
+				.map((name: string) => `Hello ${name}`)
+				.result();
+
+			assert.ok(!mapped.ok);
+			assert.equal(mapped.err, "It broke");
+		});
 	});
 
-	it("calls the fn and passes the result for err", async () => {
-		let called = false;
+	describe("mapAsync", () => {
+		it("handles OK", async () => {
+			const res = ok("Alan") as Result<string, string>;
 
-		chain(err("Testing")).inspectAsync(async (r) => {
-			assert.ok(!r.ok);
-			called = true;
+			const mapped = await chain(res)
+				.mapAsync(async (name: string) => `Hello ${name}`)
+				.result();
+
+			assert.ok(mapped.ok);
+			assert.equal(mapped.value, "Hello Alan");
 		});
 
-		assert.ok(called);
+		it("ignores Err", async () => {
+			const res = err("It broke") as Result<string, string>;
+
+			const mapped = await chain(res)
+				.mapAsync(async (name: string) => `Hello ${name}`)
+				.result();
+
+			assert.ok(!mapped.ok);
+			assert.equal(mapped.err, "It broke");
+		});
+	});
+
+	describe("mapErr", () => {
+		it("ignores OK", () => {
+			const res = ok("Alan") as Result<string, string>;
+
+			const mapped = chain(res)
+				.mapErr((cause: string) => `It broke because ${cause}`)
+				.result();
+
+			assert.ok(mapped.ok);
+			assert.equal(mapped.value, "Alan");
+		});
+
+		it("handles Err", () => {
+			const res = err("a crash");
+
+			const mapped = chain(res)
+				.mapErr((cause: string) => `It broke because ${cause}`)
+				.result();
+
+			assert.ok(!mapped.ok);
+			assert.equal(mapped.err, "It broke because a crash");
+		});
+	});
+
+	describe("mapErrAsync", () => {
+		it("ignores OK", async () => {
+			const res = ok("Alan") as Result<string, string>;
+
+			const mapped = await chain(res)
+				.mapErrAsync(async (cause: string) => `It broke because ${cause}`)
+				.result();
+
+			assert.ok(mapped.ok);
+			assert.equal(mapped.value, "Alan");
+		});
+
+		it("handles Err", async () => {
+			const res = err("a crash");
+
+			const mapped = await chain(res)
+				.mapErrAsync(async (cause: string) => `It broke because ${cause}`)
+				.result();
+
+			assert.ok(!mapped.ok);
+			assert.equal(mapped.err, "It broke because a crash");
+		});
+	});
+
+	describe("andThen", () => {
+		it("handles OK", () => {
+			const res = ok("Alan") as Result<string, string>;
+
+			const andThenned = chain(res)
+				.andThen((r) => ok(`Hello ${r.value}`))
+				.result();
+
+			assert.ok(andThenned.ok);
+			assert.equal(andThenned.value, "Hello Alan");
+		});
+
+		it("ignores Err", () => {
+			const res = err("Ugh") as Result<string, string>;
+
+			const andThenned = chain(res)
+				.andThen((r) => ok(`Hello ${r.value}`))
+				.result();
+
+			assert.ok(!andThenned.ok);
+			assert.equal(andThenned.err, "Ugh");
+		});
+	});
+
+	describe("andThenAsync", () => {
+		it("handles OK", async () => {
+			const res = ok("Alan") as Result<string, string>;
+
+			const andThenned = await chain(res)
+				.andThenAsync(async (r) => ok(`Hello ${r.value}`))
+				.result();
+
+			assert.ok(andThenned.ok);
+			assert.equal(andThenned.value, "Hello Alan");
+		});
+
+		it("ignores Err", async () => {
+			const res = err("Ugh") as Result<string, string>;
+
+			const andThenned = await chain(res)
+				.andThenAsync(async (r) => ok(`Hello ${r.value}`))
+				.result();
+
+			assert.ok(!andThenned.ok);
+			assert.equal(andThenned.err, "Ugh");
+		});
+	});
+
+	describe("orElse", () => {
+		it("ignores OK", () => {
+			const res = ok("Alan") as Result<string, string>;
+
+			const orElsed = chain(res)
+				.orElse((r) => err(`Or elsed: ${r.err}`))
+				.result();
+
+			assert.ok(orElsed.ok);
+			assert.equal(orElsed.value, "Alan");
+		});
+
+		it("handles Err", () => {
+			const res = err("Ugh") as Result<string, string>;
+
+			const orElsed = chain(res)
+				.orElse((r) => err(`Or elsed: ${r.err}`))
+				.result();
+
+			assert.ok(!orElsed.ok);
+			assert.equal(orElsed.err, "Or elsed: Ugh");
+		});
+	});
+
+	describe("orElseAsync", () => {
+		it("ignores OK", async () => {
+			const res = ok("Alan") as Result<string, string>;
+
+			const orElsed = await chain(res)
+				.orElseAsync(async (r) => err(`Or elsed: ${r.err}`))
+				.result();
+
+			assert.ok(orElsed.ok);
+			assert.equal(orElsed.value, "Alan");
+		});
+
+		it("handles Err", async () => {
+			const res = err("Ugh") as Result<string, string>;
+
+			const orElsed = await chain(res)
+				.orElseAsync(async (r) => err(`Or elsed: ${r.err}`))
+				.result();
+
+			assert.ok(!orElsed.ok);
+			assert.equal(orElsed.err, "Or elsed: Ugh");
+		});
+	});
+
+	describe("unwrap", () => {
+		it("returns value for OK", () => {
+			const res = ok("Alan") as Result<string, string>;
+
+			assert.equal(chain(res).unwrap(), "Alan");
+		});
+
+		it("throws for Err", () => {
+			const res = err("Ugh") as Result<string, string>;
+
+			assert.throws(() => chain(res).unwrap());
+		});
 	});
 });
 
-describe("map", () => {
-	it("handles OK", () => {
-		const res = ok("Alan") as Result<string, string>;
+describe("asyncChain", () => {
+	describe("result", () => {
+		it("returns the result", async () => {
+			const res = await asyncChain(Promise.resolve(ok("Testing"))).result();
 
-		const mapped = chain(res)
-			.map((name: string) => `Hello ${name}`)
-			.result();
-
-		assert.ok(mapped.ok);
-		assert.equal(mapped.value, "Hello Alan");
+			assert.ok(res.ok);
+			assert.equal(res.value, "Testing");
+		});
 	});
 
-	it("ignores Err", () => {
-		const res = err("It broke") as Result<string, string>;
+	describe("inspect", () => {
+		it("calls the fn and passes on the result for ok", async () => {
+			let called = false;
 
-		const mapped = chain(res)
-			.map((name: string) => `Hello ${name}`)
-			.result();
+			const res = await asyncChain(Promise.resolve(ok("Testing")))
+				.inspect((r) => {
+					assert.ok(r.ok);
+					called = true;
+				})
+				.result();
 
-		assert.ok(!mapped.ok);
-		assert.equal(mapped.err, "It broke");
-	});
-});
+			assert.ok(called);
+			assert.ok(res.ok);
+		});
 
-describe("mapAsync", () => {
-	it("handles OK", async () => {
-		const res = ok("Alan") as Result<string, string>;
+		it("calls the fn and passes on the result for err", async () => {
+			let called = false;
 
-		const mapped = await chain(res)
-			.mapAsync(async (name: string) => `Hello ${name}`)
-			.result();
+			const res = await asyncChain(Promise.resolve(err("Testing")))
+				.inspect((r) => {
+					assert.ok(!r.ok);
+					called = true;
+				})
+				.result();
 
-		assert.ok(mapped.ok);
-		assert.equal(mapped.value, "Hello Alan");
-	});
+			assert.ok(called);
+			assert.ok(!res.ok);
+		});
 
-	it("ignores Err", async () => {
-		const res = err("It broke") as Result<string, string>;
+		describe("inspectAsync", () => {
+			it("calls the fn and passes the result for ok", async () => {
+				let called = false;
 
-		const mapped = await chain(res)
-			.mapAsync(async (name: string) => `Hello ${name}`)
-			.result();
+				const res = await asyncChain(Promise.resolve(ok("Testing")))
+					.inspectAsync(async (r) => {
+						assert.ok(r.ok);
+						called = true;
+					})
+					.result();
 
-		assert.ok(!mapped.ok);
-		assert.equal(mapped.err, "It broke");
-	});
-});
+				assert.ok(called);
+				assert.ok(res.ok);
+			});
 
-describe("mapErr", () => {
-	it("ignores OK", () => {
-		const res = ok("Alan") as Result<string, string>;
+			it("calls the fn and passes the result for err", async () => {
+				let called = false;
 
-		const mapped = chain(res)
-			.mapErr((cause: string) => `It broke because ${cause}`)
-			.result();
+				const res = await asyncChain(Promise.resolve(err("Testing")))
+					.inspectAsync(async (r) => {
+						assert.ok(!r.ok);
+						called = true;
+					})
+					.result();
 
-		assert.ok(mapped.ok);
-		assert.equal(mapped.value, "Alan");
-	});
-
-	it("handles Err", () => {
-		const res = err("a crash");
-
-		const mapped = chain(res)
-			.mapErr((cause: string) => `It broke because ${cause}`)
-			.result();
-
-		assert.ok(!mapped.ok);
-		assert.equal(mapped.err, "It broke because a crash");
-	});
-});
-
-describe("mapErrAsync", () => {
-	it("ignores OK", async () => {
-		const res = ok("Alan") as Result<string, string>;
-
-		const mapped = await chain(res)
-			.mapErrAsync(async (cause: string) => `It broke because ${cause}`)
-			.result();
-
-		assert.ok(mapped.ok);
-		assert.equal(mapped.value, "Alan");
+				assert.ok(called);
+				assert.ok(!res.ok);
+			});
+		});
 	});
 
-	it("handles Err", async () => {
-		const res = err("a crash");
+	describe("map", () => {
+		it("handles OK", async () => {
+			const res = ok("Alan") as Result<string, string>;
 
-		const mapped = await chain(res)
-			.mapErrAsync(async (cause: string) => `It broke because ${cause}`)
-			.result();
+			const mapped = await asyncChain(Promise.resolve(res))
+				.map((name: string) => `Hello ${name}`)
+				.result();
 
-		assert.ok(!mapped.ok);
-		assert.equal(mapped.err, "It broke because a crash");
-	});
-});
+			assert.ok(mapped.ok);
+			assert.equal(mapped.value, "Hello Alan");
+		});
 
-describe("andThen", () => {
-	it("handles OK", () => {
-		const res = ok("Alan") as Result<string, string>;
+		it("ignores Err", async () => {
+			const res = err("It broke") as Result<string, string>;
 
-		const andThenned = chain(res)
-			.andThen((r) => ok(`Hello ${r.value}`))
-			.result();
+			const mapped = await asyncChain(Promise.resolve(res))
+				.map((name: string) => `Hello ${name}`)
+				.result();
 
-		assert.ok(andThenned.ok);
-		assert.equal(andThenned.value, "Hello Alan");
-	});
-
-	it("ignores Err", () => {
-		const res = err("Ugh") as Result<string, string>;
-
-		const andThenned = chain(res)
-			.andThen((r) => ok(`Hello ${r.value}`))
-			.result();
-
-		assert.ok(!andThenned.ok);
-		assert.equal(andThenned.err, "Ugh");
-	});
-});
-
-describe("andThenAsync", () => {
-	it("handles OK", async () => {
-		const res = ok("Alan") as Result<string, string>;
-
-		const andThenned = await chain(res)
-			.andThenAsync(async (r) => ok(`Hello ${r.value}`))
-			.result();
-
-		assert.ok(andThenned.ok);
-		assert.equal(andThenned.value, "Hello Alan");
+			assert.ok(!mapped.ok);
+			assert.equal(mapped.err, "It broke");
+		});
 	});
 
-	it("ignores Err", async () => {
-		const res = err("Ugh") as Result<string, string>;
+	describe("mapAsync", () => {
+		it("handles OK", async () => {
+			const res = ok("Alan") as Result<string, string>;
 
-		const andThenned = await chain(res)
-			.andThenAsync(async (r) => ok(`Hello ${r.value}`))
-			.result();
+			const mapped = await asyncChain(Promise.resolve(res))
+				.mapAsync(async (name: string) => `Hello ${name}`)
+				.result();
 
-		assert.ok(!andThenned.ok);
-		assert.equal(andThenned.err, "Ugh");
-	});
-});
+			assert.ok(mapped.ok);
+			assert.equal(mapped.value, "Hello Alan");
+		});
 
-describe("orElse", () => {
-	it("ignores OK", () => {
-		const res = ok("Alan") as Result<string, string>;
+		it("ignores Err", async () => {
+			const res = err("It broke") as Result<string, string>;
 
-		const orElsed = chain(res)
-			.orElse((r) => err(`Or elsed: ${r.err}`))
-			.result();
+			const mapped = await asyncChain(Promise.resolve(res))
+				.mapAsync(async (name: string) => `Hello ${name}`)
+				.result();
 
-		assert.ok(orElsed.ok);
-		assert.equal(orElsed.value, "Alan");
-	});
-
-	it("handles Err", () => {
-		const res = err("Ugh") as Result<string, string>;
-
-		const orElsed = chain(res)
-			.orElse((r) => err(`Or elsed: ${r.err}`))
-			.result();
-
-		assert.ok(!orElsed.ok);
-		assert.equal(orElsed.err, "Or elsed: Ugh");
-	});
-});
-
-describe("orElseAsync", () => {
-	it("ignores OK", async () => {
-		const res = ok("Alan") as Result<string, string>;
-
-		const orElsed = await chain(res)
-			.orElseAsync(async (r) => err(`Or elsed: ${r.err}`))
-			.result();
-
-		assert.ok(orElsed.ok);
-		assert.equal(orElsed.value, "Alan");
+			assert.ok(!mapped.ok);
+			assert.equal(mapped.err, "It broke");
+		});
 	});
 
-	it("handles Err", async () => {
-		const res = err("Ugh") as Result<string, string>;
+	describe("mapErr", () => {
+		it("ignores OK", async () => {
+			const res = ok("Alan") as Result<string, string>;
 
-		const orElsed = await chain(res)
-			.orElseAsync(async (r) => err(`Or elsed: ${r.err}`))
-			.result();
+			const mapped = await asyncChain(Promise.resolve(res))
+				.mapErr((cause: string) => `It broke because ${cause}`)
+				.result();
 
-		assert.ok(!orElsed.ok);
-		assert.equal(orElsed.err, "Or elsed: Ugh");
-	});
-});
+			assert.ok(mapped.ok);
+			assert.equal(mapped.value, "Alan");
+		});
 
-describe("unwrap", () => {
-	it("returns value for OK", () => {
-		const res = ok("Alan") as Result<string, string>;
+		it("handles Err", async () => {
+			const res = err("a crash");
 
-		assert.equal(chain(res).unwrap(), "Alan");
-	});
+			const mapped = await asyncChain(Promise.resolve(res))
+				.mapErr((cause: string) => `It broke because ${cause}`)
+				.result();
 
-	it("returns value for OK async", async () => {
-		const res = ok("Alan") as Result<string, string>;
-
-		assert.equal(
-			await chain(res)
-				.mapAsync(async (name) => name)
-				.unwrap(),
-			"Alan",
-		);
+			assert.ok(!mapped.ok);
+			assert.equal(mapped.err, "It broke because a crash");
+		});
 	});
 
-	it("throws for Err", () => {
-		const res = err("Ugh") as Result<string, string>;
+	describe("mapErrAsync", () => {
+		it("ignores OK", async () => {
+			const res = ok("Alan") as Result<string, string>;
 
-		assert.throws(() => chain(res).unwrap());
+			const mapped = await asyncChain(Promise.resolve(res))
+				.mapErrAsync(async (cause: string) => `It broke because ${cause}`)
+				.result();
+
+			assert.ok(mapped.ok);
+			assert.equal(mapped.value, "Alan");
+		});
+
+		it("handles Err", async () => {
+			const res = err("a crash");
+
+			const mapped = await asyncChain(Promise.resolve(res))
+				.mapErrAsync(async (cause: string) => `It broke because ${cause}`)
+				.result();
+
+			assert.ok(!mapped.ok);
+			assert.equal(mapped.err, "It broke because a crash");
+		});
 	});
 
-	it("throws for Err async", async () => {
-		const res = err("Ugh") as Result<string, string>;
+	describe("andThen", () => {
+		it("handles OK", async () => {
+			const res = ok("Alan") as Result<string, string>;
 
-		await assert.rejects(
-			async () =>
-				await chain(res)
-					.mapAsync(async (name) => name)
-					.unwrap(),
-		);
+			const andThenned = await asyncChain(Promise.resolve(res))
+				.andThen((r) => ok(`Hello ${r.value}`))
+				.result();
+
+			assert.ok(andThenned.ok);
+			assert.equal(andThenned.value, "Hello Alan");
+		});
+
+		it("ignores Err", async () => {
+			const res = err("Ugh") as Result<string, string>;
+
+			const andThenned = await asyncChain(Promise.resolve(res))
+				.andThen((r) => ok(`Hello ${r.value}`))
+				.result();
+
+			assert.ok(!andThenned.ok);
+			assert.equal(andThenned.err, "Ugh");
+		});
+	});
+
+	describe("andThenAsync", () => {
+		it("handles OK", async () => {
+			const res = ok("Alan") as Result<string, string>;
+
+			const andThenned = await asyncChain(Promise.resolve(res))
+				.andThenAsync(async (r) => ok(`Hello ${r.value}`))
+				.result();
+
+			assert.ok(andThenned.ok);
+			assert.equal(andThenned.value, "Hello Alan");
+		});
+
+		it("ignores Err", async () => {
+			const res = err("Ugh") as Result<string, string>;
+
+			const andThenned = await asyncChain(Promise.resolve(res))
+				.andThenAsync(async (r) => ok(`Hello ${r.value}`))
+				.result();
+
+			assert.ok(!andThenned.ok);
+			assert.equal(andThenned.err, "Ugh");
+		});
+	});
+
+	describe("orElse", () => {
+		it("ignores OK", async () => {
+			const res = ok("Alan") as Result<string, string>;
+
+			const orElsed = await asyncChain(Promise.resolve(res))
+				.orElse((r) => err(`Or elsed: ${r.err}`))
+				.result();
+
+			assert.ok(orElsed.ok);
+			assert.equal(orElsed.value, "Alan");
+		});
+
+		it("handles Err", async () => {
+			const res = err("Ugh") as Result<string, string>;
+
+			const orElsed = await asyncChain(Promise.resolve(res))
+				.orElse((r) => err(`Or elsed: ${r.err}`))
+				.result();
+
+			assert.ok(!orElsed.ok);
+			assert.equal(orElsed.err, "Or elsed: Ugh");
+		});
+	});
+
+	describe("orElseAsync", () => {
+		it("ignores OK", async () => {
+			const res = ok("Alan") as Result<string, string>;
+
+			const orElsed = await asyncChain(Promise.resolve(res))
+				.orElseAsync(async (r) => err(`Or elsed: ${r.err}`))
+				.result();
+
+			assert.ok(orElsed.ok);
+			assert.equal(orElsed.value, "Alan");
+		});
+
+		it("handles Err", async () => {
+			const res = err("Ugh") as Result<string, string>;
+
+			const orElsed = await asyncChain(Promise.resolve(res))
+				.orElseAsync(async (r) => err(`Or elsed: ${r.err}`))
+				.result();
+
+			assert.ok(!orElsed.ok);
+			assert.equal(orElsed.err, "Or elsed: Ugh");
+		});
+	});
+
+	describe("unwrap", () => {
+		it("returns value for OK", async () => {
+			const res = ok("Alan") as Result<string, string>;
+
+			const unwrapped = await asyncChain(Promise.resolve(res)).unwrap();
+			assert.equal(unwrapped, "Alan");
+		});
+
+		it("throws for Err", async () => {
+			const res = err("Ugh") as Result<string, string>;
+
+			await assert.rejects(async () =>
+				asyncChain(Promise.resolve(res)).unwrap(),
+			);
+		});
 	});
 });

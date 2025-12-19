@@ -25,6 +25,8 @@ export type AsyncResultChain<T, E> = {
 	inspectAsync(fn: (r: Result<T, E>) => Promise<void>): AsyncResultChain<T, E>;
 	map<U>(fn: (t: T) => U): AsyncResultChain<U, E>;
 	mapAsync<U>(fn: (t: T) => Promise<U>): AsyncResultChain<U, E>;
+	mapErr<S>(fn: (e: E) => S): AsyncResultChain<T, S>;
+	mapErrAsync<S>(fn: (e: E) => Promise<S>): AsyncResultChain<T, S>;
 	andThen<U>(fn: (r: OK<T>) => Result<U, E>): AsyncResultChain<U, E>;
 	andThenAsync<U>(
 		fn: (r: OK<T>) => Promise<Result<U, E>>,
@@ -39,11 +41,25 @@ export type AsyncResultChain<T, E> = {
 };
 
 export function chain<T, E>(r: Result<T, E>): ResultChain<T, E> {
-	if (r.ok) {
-		return okChain(r);
-	}
-
-	return errChain(r);
+	return {
+		inspect: (fn) => {
+			fn(r);
+			return chain(r);
+		},
+		inspectAsync: (fn) => asyncChain(fn(r).then(() => r)),
+		map: (fn) => chain(r.ok ? ok(fn(r.value)) : r),
+		mapAsync: (fn) =>
+			asyncChain(r.ok ? fn(r.value).then((v) => ok(v)) : Promise.resolve(r)),
+		mapErr: (fn) => chain(!r.ok ? err(fn(r.err)) : r),
+		mapErrAsync: (fn) =>
+			asyncChain(!r.ok ? fn(r.err).then((v) => err(v)) : Promise.resolve(r)),
+		andThen: (fn) => chain(r.ok ? fn(r) : r),
+		andThenAsync: (fn) => asyncChain(r.ok ? fn(r) : Promise.resolve(r)),
+		orElse: (fn) => chain(!r.ok ? fn(r) : r),
+		orElseAsync: (fn) => asyncChain(!r.ok ? fn(r) : Promise.resolve(r)),
+		result: () => r,
+		unwrap: () => unwrap(r),
+	};
 }
 
 export function asyncChain<T, E>(
@@ -51,79 +67,44 @@ export function asyncChain<T, E>(
 ): AsyncResultChain<T, E> {
 	return {
 		inspect: (fn) =>
-			asyncChain(promise.then((r) => chain(r).inspect(fn).result())),
+			asyncChain(
+				promise.then((r) => {
+					fn(r);
+					return r;
+				}),
+			),
 		inspectAsync: (fn) =>
-			asyncChain(promise.then((r) => chain(r).inspectAsync(fn).result())),
-		map: (fn) => asyncChain(promise.then((r) => chain(r).map(fn).result())),
+			asyncChain(
+				promise.then(async (r) => {
+					await fn(r);
+					return r;
+				}),
+			),
+		map: (fn) => asyncChain(promise.then((r) => (r.ok ? ok(fn(r.value)) : r))),
 		mapAsync: (fn) =>
-			asyncChain(promise.then((r) => chain(r).mapAsync(fn).result())),
-		andThen: (fn) =>
-			asyncChain(promise.then((r) => chain(r).andThen(fn).result())),
+			asyncChain(
+				promise.then((r) =>
+					r.ok ? fn(r.value).then((v) => ok(v)) : Promise.resolve(r),
+				),
+			),
+		mapErr: (fn) =>
+			asyncChain(promise.then((r) => (!r.ok ? err(fn(r.err)) : r))),
+		mapErrAsync: (fn) =>
+			asyncChain(
+				promise.then((r) =>
+					!r.ok ? fn(r.err).then((v) => err(v)) : Promise.resolve(r),
+				),
+			),
+		andThen: (fn) => asyncChain(promise.then((r) => (r.ok ? fn(r) : r))),
 		andThenAsync: (fn) =>
-			asyncChain(promise.then((r) => chain(r).andThenAsync(fn).result())),
-		orElse: (fn) =>
-			asyncChain(promise.then((r) => chain(r).orElse(fn).result())),
+			asyncChain(promise.then((r) => (r.ok ? fn(r) : Promise.resolve(r)))),
+		orElse: (fn) => asyncChain(promise.then((r) => (!r.ok ? fn(r) : r))),
 		orElseAsync: (fn) =>
-			asyncChain(promise.then((r) => chain(r).orElseAsync(fn).result())),
-
-		result: () => {
-			return promise;
-		},
+			asyncChain(promise.then((r) => (!r.ok ? fn(r) : Promise.resolve(r)))),
+		result: () => promise,
 		unwrap: async () => {
 			const r = await promise;
 			return unwrap(r);
-		},
-	};
-}
-
-function okChain<T, E>(r: OK<T>): ResultChain<T, E> {
-	return {
-		inspect: (fn) => {
-			fn(r);
-
-			return okChain(r);
-		},
-		inspectAsync: (fn) => {
-			const promise = fn(r).then(() => r);
-
-			return asyncChain(promise);
-		},
-		map: (fn) => chain(ok(fn(r.value))),
-		mapAsync: (fn) => asyncChain(fn(r.value).then((v) => ok(v))),
-		mapErr: (_) => chain(r),
-		mapErrAsync: (_) => asyncChain(Promise.resolve(r)),
-		andThen: (fn) => chain(fn(r)),
-		andThenAsync: (fn) => asyncChain(fn(r)),
-		orElse: (_) => chain(r),
-		orElseAsync: (_) => asyncChain(Promise.resolve(r)),
-		result: () => r,
-		unwrap: () => r.value,
-	};
-}
-
-function errChain<T, E>(r: Err<E>): ResultChain<T, E> {
-	return {
-		inspect: (fn) => {
-			fn(r);
-
-			return errChain(r);
-		},
-		inspectAsync: (fn) => {
-			const promise = fn(r).then(() => r);
-
-			return asyncChain(promise);
-		},
-		map: (_) => chain(r),
-		mapAsync: (_) => asyncChain(Promise.resolve(r)),
-		mapErr: (fn) => chain(err(fn(r.err))),
-		mapErrAsync: (fn) => asyncChain(fn(r.err).then((e) => err(e))),
-		andThen: (_) => chain(r),
-		andThenAsync: (_) => asyncChain(Promise.resolve(r)),
-		orElse: (fn) => chain(fn(r)),
-		orElseAsync: (fn) => asyncChain(fn(r)),
-		result: () => r,
-		unwrap: () => {
-			throw r.err;
 		},
 	};
 }
