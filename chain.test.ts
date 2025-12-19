@@ -1,12 +1,12 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { chain, asyncChain } from "./chain.ts";
+import { asyncChain, chain } from "./chain.ts";
 import { err, ok, type Result } from "./index.ts";
 
 describe("chain", () => {
 	describe("result", () => {
 		it("returns the result", () => {
-			const res = chain(ok("Testing")).result();
+			const res = chain("Testing").result();
 
 			assert.ok(res.ok);
 			assert.equal(res.value, "Testing");
@@ -17,7 +17,7 @@ describe("chain", () => {
 		it("calls the fn and passes on the result for ok", () => {
 			let called = false;
 
-			const res = chain(ok("Testing"))
+			const res = chain("Testing")
 				.inspect((r) => {
 					assert.ok(r.ok);
 					called = true;
@@ -46,7 +46,7 @@ describe("chain", () => {
 			it("calls the fn and passes the result for ok", async () => {
 				let called = false;
 
-				const res = await chain(ok("Testing"))
+				const res = await chain("Testing")
 					.inspectAsync(async (r) => {
 						assert.ok(r.ok);
 						called = true;
