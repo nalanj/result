@@ -15,20 +15,75 @@ export type ResultChain<T, E> = {
 	 */
 	inspectAsync(fn: (r: Result<T, E>) => Promise<void>): AsyncResultChain<T, E>;
 
+	/**
+	 * If the current result in the chain is `OK`, call `fn` with the current
+	 * result value as an argument. Otherwise, just pass the current result along
+	 * the chain.
+	 */
 	map<U>(fn: (t: T) => U): ResultChain<U, E>;
+
+	/**
+	 * If the current result in the chain is `OK`, call the given async `fn`
+	 * with the current result value as an argument. Otherwise, just pass the
+	 * current result along the chain.
+	 */
 	mapAsync<U>(fn: (t: T) => Promise<U>): AsyncResultChain<U, E>;
+
+	/**
+	 * If the current result in the chain is `Err`, call the given `fn` with the
+	 * current error value as an argument. Otherwise, just pass the current
+	 * result along the chain.
+	 */
 	mapErr<S>(fn: (e: E) => S): ResultChain<T, S>;
+
+	/**
+	 * If the current result in the chain is `Err`, call the given async `fn`
+	 * with the current error value as an argument. Otherwise, just pass the
+	 * current result along the chain.
+	 */
 	mapErrAsync<S>(fn: (e: E) => Promise<S>): AsyncResultChain<T, S>;
+
+	/**
+	 * If the current result in the chain is `OK`, call the given `fn` with the
+	 * current result as an argument. Otherwise, just pass the current result
+	 * along the chain.
+	 */
 	andThen<U>(fn: (r: OK<T>) => Result<U, E>): ResultChain<U, E>;
+
+	/**
+	 * If the current result in the chain is `OK`, call the given async `fn`
+	 * with the current result as an argument. Otherwise, just pass the current
+	 * result along the chain.
+	 */
 	andThenAsync<U>(
 		fn: (r: OK<T>) => Promise<Result<U, E>>,
 	): AsyncResultChain<U, E>;
+
+	/**
+	 * If the current result in the chain is `Err`, call the given `fn` with the
+	 * current result as an argument. Otherwise, just pass the current
+	 * result along the chain.
+	 */
 	orElse<S>(fn: (r: Err<E>) => Result<T, S>): ResultChain<T, S>;
+
+	/**
+	 * If the current result in the chain is `Err`, call the given async `fn`
+	 * with the current error value as an argument. Otherwise, just pass the
+	 * current result along the chain.
+	 */
 	orElseAsync<S>(
 		fn: (r: Err<E>) => Promise<Result<T, S>>,
 	): AsyncResultChain<T, S>;
 
+	/**
+	 * Returns the current result value in the chain.
+	 */
 	result(): Result<T, E>;
+
+	/**
+	 * Unwrap the current result in the chain. Returns either the value of the
+	 * current result or throws the current error.
+	 */
 	unwrap(): T;
 };
 
@@ -46,20 +101,76 @@ export type AsyncResultChain<T, E> = {
 	 * asynchronously recording a value in a chain.
 	 */
 	inspectAsync(fn: (r: Result<T, E>) => Promise<void>): AsyncResultChain<T, E>;
+
+	/**
+	 * If the current result in the chain is `OK`, call `fn` with the current
+	 * result value as an argument. Otherwise, just pass the current result along
+	 * the chain.
+	 */
 	map<U>(fn: (t: T) => U): AsyncResultChain<U, E>;
+
+	/**
+	 * If the current result in the chain is `OK`, call the given async `fn`
+	 * with the current result value as an argument. Otherwise, just pass the
+	 * current result along the chain.
+	 */
 	mapAsync<U>(fn: (t: T) => Promise<U>): AsyncResultChain<U, E>;
+
+	/**
+	 * If the current result in the chain is `Err`, call the given async `fn`
+	 * with the current error value as an argument. Otherwise, just pass the
+	 * current result along the chain.
+	 */
 	mapErr<S>(fn: (e: E) => S): AsyncResultChain<T, S>;
+
+	/**
+	 * If the current result in the chain is `Err`, call the given async `fn`
+	 * with the current error value as an argument. Otherwise, just pass the
+	 * current result along the chain.
+	 */
 	mapErrAsync<S>(fn: (e: E) => Promise<S>): AsyncResultChain<T, S>;
+
+	/**
+	 * If the current result in the chain is `OK`, call the given `fn` with the
+	 * current result as an argument. Otherwise, just pass the current result
+	 * along the chain.
+	 */
 	andThen<U>(fn: (r: OK<T>) => Result<U, E>): AsyncResultChain<U, E>;
+
+	/**
+	 * If the current result in the chain is `OK`, call the given async `fn`
+	 * with the current result as an argument. Otherwise, just pass the current
+	 * result along the chain.
+	 */
 	andThenAsync<U>(
 		fn: (r: OK<T>) => Promise<Result<U, E>>,
 	): AsyncResultChain<U, E>;
+
+	/**
+	 * If the current result in the chain is `Err`, call the given `fn` with the
+	 * current result as an argument. Otherwise, just pass the current
+	 * result along the chain.
+	 */
 	orElse<S>(fn: (r: Err<E>) => Result<T, S>): AsyncResultChain<T, S>;
+
+	/**
+	 * If the current result in the chain is `Err`, call the given async `fn`
+	 * with the current result as an argument. Otherwise, just pass the current
+	 * result along the chain.
+	 */
 	orElseAsync<S>(
 		fn: (r: Err<E>) => Promise<Result<T, S>>,
 	): AsyncResultChain<T, S>;
 
+	/**
+	 * Returns the current result value in the chain.
+	 */
 	result(): Promise<Result<T, E>>;
+
+	/**
+	 * Unwrap the current result in the chain. Returns either the value of the
+	 * current result or throws the current error.
+	 */
 	unwrap(): Promise<T>;
 };
 
@@ -100,7 +211,7 @@ export function syncChain<T, E>(r: Result<T, E>): ResultChain<T, E> {
 	};
 }
 
-function asyncChain<T, E>(
+export function asyncChain<T, E>(
 	promise: Promise<Result<T, E>>,
 ): AsyncResultChain<T, E> {
 	return {
