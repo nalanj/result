@@ -75,9 +75,10 @@ export function asyncChain<T, E>(
 			),
 		inspectAsync: (fn) =>
 			asyncChain(
-				promise
-					.then((r) => fn(r).then(() => r))
-					.then((r) => Promise.resolve(r)),
+				promise.then(async (r) => {
+					await fn(r);
+					return r;
+				}),
 			),
 		map: (fn) => asyncChain(promise.then((r) => (r.ok ? ok(fn(r.value)) : r))),
 		mapAsync: (fn) =>
@@ -95,12 +96,12 @@ export function asyncChain<T, E>(
 				),
 			),
 		andThen: (fn) => asyncChain(promise.then((r) => (r.ok ? fn(r) : r))),
-		andThenAsync: (fn) => asyncChain(promise.then((r) => (r.ok ? fn(r) : r))),
+		andThenAsync: (fn) =>
+			asyncChain(promise.then((r) => (r.ok ? fn(r) : Promise.resolve(r)))),
 		orElse: (fn) => asyncChain(promise.then((r) => (!r.ok ? fn(r) : r))),
-		orElseAsync: (fn) => asyncChain(promise.then((r) => (!r.ok ? fn(r) : r))),
-		result: () => {
-			return promise;
-		},
+		orElseAsync: (fn) =>
+			asyncChain(promise.then((r) => (!r.ok ? fn(r) : Promise.resolve(r)))),
+		result: () => promise,
 		unwrap: async () => {
 			const r = await promise;
 			return unwrap(r);
