@@ -47,7 +47,7 @@ console.log(result.value); // 12
 
 ### err
 
-```
+```typescript
 export function err(error: E): Err<E>
 ```
 
@@ -120,16 +120,16 @@ chain.inspect(fn: (r: Result<T, E>) => void): ResultChain<T, E>
 asyncChain.inspect(fn: (r: Result<T, E>) => void): AsyncResultChain<T, E>
 ```
 
-`inspect` calls the given function on the current result in the chain and returns
-a chain with the same `Result`. It's useful for cases like logging
-a value in a chain.
+`inspect` calls the given function on the current result in the chain and
+returns a chain with the same `Result`. It's useful for cases like logging a
+value in a chain.
 
 #### Example
 
 ```typescript
 chain(ok("Frank"))
-  .map(firstName => `${name} Smith`)
-  .inspect(fullName => console.log(fullName))
+  .map((firstName) => `${name} Smith`)
+  .inspect((fullName) => console.log(fullName))
   .result();
 ```
 
@@ -148,8 +148,8 @@ and results in an `AsyncResultChain`.
 
 ```typescript
 await chain(ok("Frank"))
-  .map(firstName => `${name} Smith`)
-  .inspectAsync(fullName => auditLog(fullName))
+  .map((firstName) => `${firstName} Smith`)
+  .inspectAsync(async (fullName) => await auditLog(fullName))
   .result();
 ```
 
@@ -164,6 +164,14 @@ asyncChain.map<U>(fn: (t: T) => U): AsyncResultChain<U, E>;
 the chain is `OK`, calls `fn` with the current result value as an argument.
 Otherwise, passes the current result along the chain.
 
+#### Example
+
+```typescript
+chain(ok("Frank"))
+  .map((firstName) => `${name} Smith`)
+  result();
+```
+
 ### chain.mapAsync
 
 ```typescript
@@ -176,6 +184,13 @@ allows the conversion function to be async. If the current result in the chain
 is `OK`, calls the given async `fn` with the current result value as an argument.
 Otherwise, passes the current result along the chain.
 
+#### Example
+
+```typescript
+await chain(ok(username))
+  .mapAsync((firstName) => )
+```
+
 ### chain.mapErr
 
 ```typescript
@@ -186,6 +201,11 @@ asyncChain.mapErr<S>(fn: (e: E) => S): AsyncResultChain<T, S>;
 `mapErr` converts one type of `Err` value into another. If the current result
 in the chain is `Err`, calls the given `fn` with the current error value as an
 argument. Otherwise, passes the current result along the chain.
+
+#### Example
+
+```typescript
+```
 
 ### chain.mapErrSync
 
@@ -199,6 +219,11 @@ but allows the conversion function to be async. If the current result in the
 chain is `Err`, calls the given async `fn` with the current error value as an
 argument. Otherwise, passes the current result along the chain.
 
+#### Example
+
+```typescript
+```
+
 ### chain.andThen
 
 ```typescript
@@ -211,6 +236,11 @@ the chain is an `OK`. If the current result in the chain is `OK`, calls the
 given `fn` with the current result as an argument. Otherwise, passes the current
 result along the chain.
 
+#### Example
+
+```typescript
+```
+
 ### chain.andThenAsync
 
 ```typescript
@@ -221,6 +251,11 @@ asyncChain.andThenAsync<U>(fn: (r: OK<T>) => Promise<Result<U, E>>): AsyncResult
 If the current result in the chain is `OK`, calls the given async `fn`
 with the current result as an argument. Otherwise, passes the current
 result along the chain.
+
+#### Example
+
+```typescript
+```
 
 ### chain.orElse
 
@@ -233,6 +268,11 @@ If the current result in the chain is `Err`, calls the given `fn` with the
 current result as an argument. Otherwise, passes the current
 result along the chain.
 
+#### Example
+
+```typescript
+```
+
 ### chain.orElseAsync
 
 ```typescript
@@ -243,6 +283,11 @@ asyncChain.orElseAsync<S>(fn: (r: Err<E>) => Promise<Result<T, S>>): AsyncResult
 If the current result in the chain is `Err`, calls the given async `fn` with
 the current error value as an argument. Otherwise, passes the current result
 along the chain.
+
+#### Example
+
+```typescript
+```
 
 ### chain.result
 
@@ -255,6 +300,11 @@ Returns the last result value on the chain. If it's an async chain, returns
 a promise that will resolve to the last result once all promises in the chain
 have completed.
 
+#### Example
+
+```typescript
+```
+
 ### chain.unwrap
 
 ```typescript
@@ -264,3 +314,8 @@ asyncChain.unwrap(): Promise<T>;
 
 Like [unwrap](#unwrap), either returns the success value or throws the error
 value for the last result on the chain.
+
+#### Example
+
+```typescript
+```
