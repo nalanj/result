@@ -90,27 +90,32 @@ console.log(unwrap(bad));
 ### chain
 
 ```typescript
-export function chain<T,E>(r: Result<T, E>): ResultChain<T, E>)
+export function chain<T,E>(r: T | Result<T, E>): ResultChain<T, E>)
 ```
 
-Chain takes a result and allows for chained calls against it. Chain itself
-always returns a `ResultChain`, but chained calls may return a `ResultChain`
-or `AsyncResultChain` depending on if the chained function is async or not. Once
-an async function is called, the remaining calls always return an
-`AsyncResultChain`.
+Chain takes a value or a result and allows for chained calls against it.
+Chain itself always returns a `ResultChain`, but chained calls may return a
+`ResultChain` or `AsyncResultChain` depending on if the chained function is
+async or not. Once an async function is called, the remaining calls always
+return an `AsyncResultChain`.
 
 #### Example
 
 ```typescript
+const chainResult = chain("Frank")
+  .map((name) => `Hello ${name}!`)
+  .map((message) => `${message} How are you?`)
+  .result();
+
 const chainResult = chain(ok("Frank"))
   .map((name) => `Hello ${name}!`)
   .map((message) => `${message} How are you?`)
-  .result()
+  .result();
 
 const asyncChainResult = await chain(ok("Frank"))
   .mapAsync((name) => find(name))
   .mapAsync((user) => updateUser({ name: "Frank Smith" }))
-  .result()
+  .result();
 ```
 
 ### chain.inspect
@@ -127,7 +132,7 @@ value in a chain.
 #### Example
 
 ```typescript
-chain(ok("Frank"))
+chain("Frank")
   .map((firstName) => `${name} Smith`)
   .inspect((fullName) => console.log(fullName))
   .result();
@@ -147,7 +152,7 @@ and results in an `AsyncResultChain`.
 #### Example
 
 ```typescript
-await chain(ok("Frank"))
+await chain("Frank")
   .map((firstName) => `${firstName} Smith`)
   .inspectAsync(async (fullName) => await auditLog(fullName))
   .result();
@@ -167,7 +172,7 @@ Otherwise, passes the current result along the chain.
 #### Example
 
 ```typescript
-chain(ok("Frank"))
+chain("Frank")
   .map((firstName) => `${name} Smith`)
   result();
 ```
@@ -187,8 +192,9 @@ Otherwise, passes the current result along the chain.
 #### Example
 
 ```typescript
-await chain(ok(username))
-  .mapAsync((firstName) => )
+await chain(username)
+  .mapAsync(async (username) => await loadUser(username))
+  .result();
 ```
 
 ### chain.mapErr
@@ -205,6 +211,9 @@ argument. Otherwise, passes the current result along the chain.
 #### Example
 
 ```typescript
+chain(err("It broke"))
+  .mapErr((error) => `Cause: ${error}`)
+  .result();
 ```
 
 ### chain.mapErrSync
@@ -222,6 +231,10 @@ argument. Otherwise, passes the current result along the chain.
 #### Example
 
 ```typescript
+await chain(username)
+  .andThenAsync((r) => await loadUserByUsername(r.value))
+  .mapErrAsync(async (error) => await loadUserByEmail(r.value))
+  .result();
 ```
 
 ### chain.andThen
@@ -239,6 +252,9 @@ result along the chain.
 #### Example
 
 ```typescript
+chain(username)
+  .andThen((r) => validateUsername(r))
+  .result();
 ```
 
 ### chain.andThenAsync
@@ -255,6 +271,9 @@ result along the chain.
 #### Example
 
 ```typescript
+await chain(username)
+  .andThenAsync((r) => await loadUser(r.value))
+  .result();
 ```
 
 ### chain.orElse
@@ -271,6 +290,10 @@ result along the chain.
 #### Example
 
 ```typescript
+chain(divisor)
+  .andThen((r) => divide(12, r))
+  .orElse((r) => ok(0))
+  .result();
 ```
 
 ### chain.orElseAsync
