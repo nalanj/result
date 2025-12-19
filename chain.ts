@@ -40,22 +40,30 @@ export type AsyncResultChain<T, E> = {
 	unwrap(): Promise<T>;
 };
 
-export function chain<T, E>(r: Result<T, E>): ResultChain<T, E> {
+export function chain<T, E>(r: T | Result<T, E>): ResultChain<T, E> {
+	if (typeof r !== "object" || r === null || !("ok" in r)) {
+		r = ok(r);
+	}
+
+	return syncChain(r);
+}
+
+export function syncChain<T, E>(r: Result<T, E>): ResultChain<T, E> {
 	return {
 		inspect: (fn) => {
 			fn(r);
-			return chain(r);
+			return syncChain(r);
 		},
 		inspectAsync: (fn) => asyncChain(fn(r).then(() => r)),
-		map: (fn) => chain(r.ok ? ok(fn(r.value)) : r),
+		map: (fn) => syncChain(r.ok ? ok(fn(r.value)) : r),
 		mapAsync: (fn) =>
 			asyncChain(r.ok ? fn(r.value).then((v) => ok(v)) : Promise.resolve(r)),
-		mapErr: (fn) => chain(!r.ok ? err(fn(r.err)) : r),
+		mapErr: (fn) => syncChain(!r.ok ? err(fn(r.err)) : r),
 		mapErrAsync: (fn) =>
 			asyncChain(!r.ok ? fn(r.err).then((v) => err(v)) : Promise.resolve(r)),
-		andThen: (fn) => chain(r.ok ? fn(r) : r),
+		andThen: (fn) => syncChain(r.ok ? fn(r) : r),
 		andThenAsync: (fn) => asyncChain(r.ok ? fn(r) : Promise.resolve(r)),
-		orElse: (fn) => chain(!r.ok ? fn(r) : r),
+		orElse: (fn) => syncChain(!r.ok ? fn(r) : r),
 		orElseAsync: (fn) => asyncChain(!r.ok ? fn(r) : Promise.resolve(r)),
 		result: () => r,
 		unwrap: () => unwrap(r),
