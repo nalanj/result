@@ -310,6 +310,15 @@ along the chain.
 #### Example
 
 ```typescript
+await chain(newPlan)
+  .andThenAsync((r) => await setPlan(r.value))
+  .orElseAsync((r) => {
+    return err({
+      message: r.err.message,
+      planOptions: await listPlans()
+    });
+  })
+  .result();
 ```
 
 ### chain.result
@@ -326,6 +335,10 @@ have completed.
 #### Example
 
 ```typescript
+// returns a Result<User, unknown>
+chain(userId)
+  .map(loadUser)
+  .result();
 ```
 
 ### chain.unwrap
@@ -341,4 +354,8 @@ value for the last result on the chain.
 #### Example
 
 ```typescript
+// returns the user or throws if the user wasn't found
+chain(userId)
+  .map(loadUser)
+  .unwrap();
 ```
