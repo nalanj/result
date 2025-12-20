@@ -20,10 +20,10 @@ Try-free result handling for TypeScript
 - [chain.mapAsync](#chainmapasync)
 - [chain.mapErr](#chainmaperr)
 - [chain.mapErrAsync](#chainmaperrasync)
-- [chain.andThen](#chainandthen)
-- [chain.andThenAsync](#chainandthenasync)
-- [chain.orElse](#chainorelse)
-- [chain.orElseAsync](#chainorelse)
+- [chain.ifOK](#chainifok)
+- [chain.ifOKAsync](#chainifokasync)
+- [chain.ifErr](#chainiferr)
+- [chain.ifErrAsync](#chainiferrasync)
 - [chain.result](#chainresult)
 - [chain.unwrap](#chainunwrap)
 
@@ -232,75 +232,74 @@ argument. Otherwise, passes the current result along the chain.
 
 ```typescript
 await chain(username)
-  .andThenAsync((r) => await loadUserByUsername(r.value))
+  .ifOKAsync((value) => await loadUserByUsername(value))
   .mapErrAsync(async (error) => await loadUserByEmail(r.value))
   .result();
 ```
 
-### chain.andThen
+### chain.ifOK
 
 ```typescript
-chain.andThen<U>(fn: (r: OK<T>) => Result<U, E>): ResultChain<U, E>;
-asyncChain.andThen<U>(fn: (r: OK<T>) => Result<U, E>): ResultChain<U, E>;
+chain.ifOK<U>(fn: (r: T) => Result<U, E>): ResultChain<U, E>;
+asyncChain.ifOK<U>(fn: (r: T) => Result<U, E>): ResultChain<U, E>;
 ```
 
-`andThen` converts one type of `Result` into another when the current result on
-the chain is an `OK`. If the current result in the chain is `OK`, calls the
-given `fn` with the current result as an argument. Otherwise, passes the current
-result along the chain.
+If the current result in the chain is `OK`, calls the given `fn` with the
+current value as an argument. Otherwise, passes the current result along the
+chain.
 
 #### Example
 
 ```typescript
 chain(username)
-  .andThen((r) => validateUsername(r))
+  .ifOK((value) => validateUsername(value))
   .result();
 ```
 
-### chain.andThenAsync
+### chain.ifOKAsync
 
 ```typescript
-chain.andThenAsync<U>(fn: (r: OK<T>) => Promise<Result<U, E>>): AsyncResultChain<U, E>;
-asyncChain.andThenAsync<U>(fn: (r: OK<T>) => Promise<Result<U, E>>): AsyncResultChain<U, E>;
+chain.ifOKAsync<U>(fn: (r: T) => Promise<Result<U, E>>): AsyncResultChain<U, E>;
+asyncChain.ifOKAsync<U>(fn: (r: T) => Promise<Result<U, E>>): AsyncResultChain<U, E>;
 ```
 
-If the current result in the chain is `OK`, calls the given async `fn`
-with the current result as an argument. Otherwise, passes the current
-result along the chain.
+If the current result in the chain is `OK`, calls the given async `fn` with the
+current value as an argument. Otherwise, passes the current result along the
+chain.
 
 #### Example
 
 ```typescript
 await chain(username)
-  .andThenAsync((r) => await loadUser(r.value))
+  .ifOKAsync((value) => await loadUser(value))
   .result();
 ```
 
-### chain.orElse
+### chain.ifErr
 
 ```typescript
-chain.orElse<S>(fn: (r: Err<E>) => Result<T, S>): ResultChain<T, S>;
-asyncChain.orElse<S>(fn: (r: Err<E>) => Result<T, S>): AsyncResultChain<T, S>;
+chain.ifErr<S>(fn: (r: E) => Result<T, S>): ResultChain<T, S>;
+asyncChain.ifErr<S>(fn: (r: E) => Result<T, S>): AsyncResultChain<T, S>;
 ```
 
 If the current result in the chain is `Err`, calls the given `fn` with the
-current result as an argument. Otherwise, passes the current
-result along the chain.
+current error value as an argument. Otherwise, passes the current result along
+the chain.
 
 #### Example
 
 ```typescript
 chain(divisor)
-  .andThen((r) => divide(12, r))
-  .orElse((r) => ok(0))
+  .ifOK((value) => divide(12, value))
+  .ifErr((error) => ok(0))
   .result();
 ```
 
-### chain.orElseAsync
+### chain.ifErrAsync
 
 ```typescript
-chain.orElseAsync<S>(fn: (r: Err<E>) => Promise<Result<T, S>>): AsyncResultChain<T, S>;
-asyncChain.orElseAsync<S>(fn: (r: Err<E>) => Promise<Result<T, S>>): AsyncResultChain<T, S>;
+chain.ifErrAsync<S>(fn: (r: E) => Promise<Result<T, S>>): AsyncResultChain<T, S>;
+asyncChain.ifErrAsync<S>(fn: (r: E) => Promise<Result<T, S>>): AsyncResultChain<T, S>;
 ```
 
 If the current result in the chain is `Err`, calls the given async `fn` with
@@ -311,8 +310,8 @@ along the chain.
 
 ```typescript
 await chain(newPlan)
-  .andThenAsync((r) => await setPlan(r.value))
-  .orElseAsync((r) => {
+  .ifOKAsync((r) => await setPlan(r.value))
+  .ifErrAsync((r) => {
     return err({
       message: r.err.message,
       planOptions: await listPlans()

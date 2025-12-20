@@ -174,7 +174,7 @@ describe("chain", () => {
 			const res = ok("Alan") as Result<string, string>;
 
 			const andThenned = chain(res)
-				.andThen((r) => ok(`Hello ${r.value}`))
+				.ifOK((value) => ok(`Hello ${value}`))
 				.result();
 
 			assert.ok(andThenned.ok);
@@ -185,7 +185,7 @@ describe("chain", () => {
 			const res = err("Ugh") as Result<string, string>;
 
 			const andThenned = chain(res)
-				.andThen((r) => ok(`Hello ${r.value}`))
+				.ifOK((value) => ok(`Hello ${value}`))
 				.result();
 
 			assert.ok(!andThenned.ok);
@@ -198,7 +198,7 @@ describe("chain", () => {
 			const res = ok("Alan") as Result<string, string>;
 
 			const andThenned = await chain(res)
-				.andThenAsync(async (r) => ok(`Hello ${r.value}`))
+				.ifOKAsync(async (value) => ok(`Hello ${value}`))
 				.result();
 
 			assert.ok(andThenned.ok);
@@ -209,7 +209,7 @@ describe("chain", () => {
 			const res = err("Ugh") as Result<string, string>;
 
 			const andThenned = await chain(res)
-				.andThenAsync(async (r) => ok(`Hello ${r.value}`))
+				.ifOKAsync(async (value) => ok(`Hello ${value}`))
 				.result();
 
 			assert.ok(!andThenned.ok);
@@ -222,7 +222,7 @@ describe("chain", () => {
 			const res = ok("Alan") as Result<string, string>;
 
 			const orElsed = chain(res)
-				.orElse((r) => err(`Or elsed: ${r.err}`))
+				.ifErr((error) => err(`Or elsed: ${error}`))
 				.result();
 
 			assert.ok(orElsed.ok);
@@ -233,7 +233,7 @@ describe("chain", () => {
 			const res = err("Ugh") as Result<string, string>;
 
 			const orElsed = chain(res)
-				.orElse((r) => err(`Or elsed: ${r.err}`))
+				.ifErr((error) => err(`Or elsed: ${error}`))
 				.result();
 
 			assert.ok(!orElsed.ok);
@@ -246,7 +246,7 @@ describe("chain", () => {
 			const res = ok("Alan") as Result<string, string>;
 
 			const orElsed = await chain(res)
-				.orElseAsync(async (r) => err(`Or elsed: ${r.err}`))
+				.ifErrAsync(async (error) => err(`Or elsed: ${error}`))
 				.result();
 
 			assert.ok(orElsed.ok);
@@ -257,7 +257,7 @@ describe("chain", () => {
 			const res = err("Ugh") as Result<string, string>;
 
 			const orElsed = await chain(res)
-				.orElseAsync(async (r) => err(`Or elsed: ${r.err}`))
+				.ifErrAsync(async (error) => err(`Or elsed: ${error}`))
 				.result();
 
 			assert.ok(!orElsed.ok);
@@ -451,7 +451,7 @@ describe("asyncChain", () => {
 			const res = ok("Alan") as Result<string, string>;
 
 			const andThenned = await asyncChain(Promise.resolve(res))
-				.andThen((r) => ok(`Hello ${r.value}`))
+				.ifOK((value) => ok(`Hello ${value}`))
 				.result();
 
 			assert.ok(andThenned.ok);
@@ -462,7 +462,7 @@ describe("asyncChain", () => {
 			const res = err("Ugh") as Result<string, string>;
 
 			const andThenned = await asyncChain(Promise.resolve(res))
-				.andThen((r) => ok(`Hello ${r.value}`))
+				.ifOK((value) => ok(`Hello ${value}`))
 				.result();
 
 			assert.ok(!andThenned.ok);
@@ -475,7 +475,7 @@ describe("asyncChain", () => {
 			const res = ok("Alan") as Result<string, string>;
 
 			const andThenned = await asyncChain(Promise.resolve(res))
-				.andThenAsync(async (r) => ok(`Hello ${r.value}`))
+				.ifOKAsync(async (value) => ok(`Hello ${value}`))
 				.result();
 
 			assert.ok(andThenned.ok);
@@ -486,7 +486,7 @@ describe("asyncChain", () => {
 			const res = err("Ugh") as Result<string, string>;
 
 			const andThenned = await asyncChain(Promise.resolve(res))
-				.andThenAsync(async (r) => ok(`Hello ${r.value}`))
+				.ifOKAsync(async (value) => ok(`Hello ${value}`))
 				.result();
 
 			assert.ok(!andThenned.ok);
@@ -499,7 +499,7 @@ describe("asyncChain", () => {
 			const res = ok("Alan") as Result<string, string>;
 
 			const orElsed = await asyncChain(Promise.resolve(res))
-				.orElse((r) => err(`Or elsed: ${r.err}`))
+				.ifErr((error) => err(`Or elsed: ${error}`))
 				.result();
 
 			assert.ok(orElsed.ok);
@@ -510,7 +510,7 @@ describe("asyncChain", () => {
 			const res = err("Ugh") as Result<string, string>;
 
 			const orElsed = await asyncChain(Promise.resolve(res))
-				.orElse((r) => err(`Or elsed: ${r.err}`))
+				.ifErr((error) => err(`Or elsed: ${error}`))
 				.result();
 
 			assert.ok(!orElsed.ok);
@@ -523,7 +523,7 @@ describe("asyncChain", () => {
 			const res = ok("Alan") as Result<string, string>;
 
 			const orElsed = await asyncChain(Promise.resolve(res))
-				.orElseAsync(async (r) => err(`Or elsed: ${r.err}`))
+				.ifErrAsync(async (error) => err(`Or elsed: ${error}`))
 				.result();
 
 			assert.ok(orElsed.ok);
@@ -534,7 +534,7 @@ describe("asyncChain", () => {
 			const res = err("Ugh") as Result<string, string>;
 
 			const orElsed = await asyncChain(Promise.resolve(res))
-				.orElseAsync(async (r) => err(`Or elsed: ${r.err}`))
+				.ifErrAsync(async (error) => err(`Or elsed: ${error}`))
 				.result();
 
 			assert.ok(!orElsed.ok);

@@ -1,4 +1,4 @@
-import { type Err, err, type OK, ok, type Result, unwrap } from "./index.ts";
+import { err, ok, type Result, unwrap } from "./index.ts";
 
 export type ResultChain<T, E> = {
 	/**
@@ -45,35 +45,31 @@ export type ResultChain<T, E> = {
 
 	/**
 	 * If the current result in the chain is `OK`, calls the given `fn` with the
-	 * current result as an argument. Otherwise, passes the current result
+	 * current value as an argument. Otherwise, passes the current result
 	 * along the chain.
 	 */
-	andThen<U>(fn: (r: OK<T>) => Result<U, E>): ResultChain<U, E>;
+	ifOK<U>(fn: (r: T) => Result<U, E>): ResultChain<U, E>;
 
 	/**
 	 * If the current result in the chain is `OK`, calls the given async `fn`
-	 * with the current result as an argument. Otherwise, passes the current
+	 * with the current value as an argument. Otherwise, passes the current
 	 * result along the chain.
 	 */
-	andThenAsync<U>(
-		fn: (r: OK<T>) => Promise<Result<U, E>>,
-	): AsyncResultChain<U, E>;
+	ifOKAsync<U>(fn: (r: T) => Promise<Result<U, E>>): AsyncResultChain<U, E>;
 
 	/**
 	 * If the current result in the chain is `Err`, calls the given `fn` with the
-	 * current result as an argument. Otherwise, passes the current
-	 * result along the chain.
+	 * current error as an argument. Otherwise, passes the current result along
+	 * the chain.
 	 */
-	orElse<S>(fn: (r: Err<E>) => Result<T, S>): ResultChain<T, S>;
+	ifErr<S>(fn: (r: E) => Result<T, S>): ResultChain<T, S>;
 
 	/**
 	 * If the current result in the chain is `Err`, calls the given async `fn`
 	 * with the current error value as an argument. Otherwise, passes the
 	 * current result along the chain.
 	 */
-	orElseAsync<S>(
-		fn: (r: Err<E>) => Promise<Result<T, S>>,
-	): AsyncResultChain<T, S>;
+	ifErrAsync<S>(fn: (r: E) => Promise<Result<T, S>>): AsyncResultChain<T, S>;
 
 	/**
 	 * Returns the current result value in the chain.
@@ -132,35 +128,31 @@ export type AsyncResultChain<T, E> = {
 
 	/**
 	 * If the current result in the chain is `OK`, call the given `fn` with the
-	 * current result as an argument. Otherwise, just pass the current result
+	 * current value as an argument. Otherwise, just pass the current result
 	 * along the chain.
 	 */
-	andThen<U>(fn: (r: OK<T>) => Result<U, E>): AsyncResultChain<U, E>;
+	ifOK<U>(fn: (r: T) => Result<U, E>): AsyncResultChain<U, E>;
 
 	/**
 	 * If the current result in the chain is `OK`, call the given async `fn`
-	 * with the current result as an argument. Otherwise, just pass the current
+	 * with the current value as an argument. Otherwise, just pass the current
 	 * result along the chain.
 	 */
-	andThenAsync<U>(
-		fn: (r: OK<T>) => Promise<Result<U, E>>,
-	): AsyncResultChain<U, E>;
+	ifOKAsync<U>(fn: (r: T) => Promise<Result<U, E>>): AsyncResultChain<U, E>;
 
 	/**
 	 * If the current result in the chain is `Err`, call the given `fn` with the
-	 * current result as an argument. Otherwise, just pass the current
+	 * current error as an argument. Otherwise, just pass the current
 	 * result along the chain.
 	 */
-	orElse<S>(fn: (r: Err<E>) => Result<T, S>): AsyncResultChain<T, S>;
+	ifErr<S>(fn: (r: E) => Result<T, S>): AsyncResultChain<T, S>;
 
 	/**
 	 * If the current result in the chain is `Err`, call the given async `fn`
-	 * with the current result as an argument. Otherwise, just pass the current
+	 * with the current error as an argument. Otherwise, just pass the current
 	 * result along the chain.
 	 */
-	orElseAsync<S>(
-		fn: (r: Err<E>) => Promise<Result<T, S>>,
-	): AsyncResultChain<T, S>;
+	ifErrAsync<S>(fn: (r: E) => Promise<Result<T, S>>): AsyncResultChain<T, S>;
 
 	/**
 	 * Returns the current result value in the chain.
@@ -202,10 +194,10 @@ export function syncChain<T, E>(r: Result<T, E>): ResultChain<T, E> {
 		mapErr: (fn) => syncChain(!r.ok ? err(fn(r.err)) : r),
 		mapErrAsync: (fn) =>
 			asyncChain(!r.ok ? fn(r.err).then((v) => err(v)) : Promise.resolve(r)),
-		andThen: (fn) => syncChain(r.ok ? fn(r) : r),
-		andThenAsync: (fn) => asyncChain(r.ok ? fn(r) : Promise.resolve(r)),
-		orElse: (fn) => syncChain(!r.ok ? fn(r) : r),
-		orElseAsync: (fn) => asyncChain(!r.ok ? fn(r) : Promise.resolve(r)),
+		ifOK: (fn) => syncChain(r.ok ? fn(r.value) : r),
+		ifOKAsync: (fn) => asyncChain(r.ok ? fn(r.value) : Promise.resolve(r)),
+		ifErr: (fn) => syncChain(!r.ok ? fn(r.err) : r),
+		ifErrAsync: (fn) => asyncChain(!r.ok ? fn(r.err) : Promise.resolve(r)),
 		result: () => r,
 		unwrap: () => unwrap(r),
 	};
@@ -244,12 +236,14 @@ export function asyncChain<T, E>(
 					!r.ok ? fn(r.err).then((v) => err(v)) : Promise.resolve(r),
 				),
 			),
-		andThen: (fn) => asyncChain(promise.then((r) => (r.ok ? fn(r) : r))),
-		andThenAsync: (fn) =>
-			asyncChain(promise.then((r) => (r.ok ? fn(r) : Promise.resolve(r)))),
-		orElse: (fn) => asyncChain(promise.then((r) => (!r.ok ? fn(r) : r))),
-		orElseAsync: (fn) =>
-			asyncChain(promise.then((r) => (!r.ok ? fn(r) : Promise.resolve(r)))),
+		ifOK: (fn) => asyncChain(promise.then((r) => (r.ok ? fn(r.value) : r))),
+		ifOKAsync: (fn) =>
+			asyncChain(
+				promise.then((r) => (r.ok ? fn(r.value) : Promise.resolve(r))),
+			),
+		ifErr: (fn) => asyncChain(promise.then((r) => (!r.ok ? fn(r.err) : r))),
+		ifErrAsync: (fn) =>
+			asyncChain(promise.then((r) => (!r.ok ? fn(r.err) : Promise.resolve(r)))),
 		result: () => promise,
 		unwrap: async () => {
 			const r = await promise;
