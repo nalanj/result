@@ -6,7 +6,30 @@ Try-free result handling for TypeScript
 
 ## Usage
 
-[Basic usage example goes here]
+`result` helps you handle errors in TypeScript projects without relying on
+`try/catch`. It provides helpers `ok` and `err` for representing success and
+failure. It also includes a `chain` help that allows for lightweight functional
+handling  of results.
+
+```
+import { err, ok, chain } from "@nalanj/result";
+
+function divide(numerator: number, denominator: number) {
+  if (denominator === 0) {
+    return err("Divide by zero error");
+  }
+
+  return ok(numerator / denominator);
+}
+
+const finalValue = chain(divide(12, 3))
+  .inspect(console.log)
+  .ifOK((value) => divide(value, 2))
+  .ifErr((error) => err(`Something went wrong: ${error}`))
+  .unwrap();
+
+console.log(finalValue);
+```
 
 ## API Docs
 
