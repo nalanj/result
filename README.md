@@ -12,7 +12,7 @@ failure. It also includes a `chain` help that allows for lightweight functional
 handling  of results.
 
 ```
-import { err, ok, chain } from "@nalanj/result";
+import { err, ok, chain } from broom-closet/result";
 
 function divide(numerator: number, denominator: number) {
   if (denominator === 0) {
@@ -35,7 +35,7 @@ console.log(finalValue);
 
 - [ok](#ok)
 - [err](#err)
-- [unrwap](#unwrap)
+- [unwrap](#unwrap)
 - [chain](#chain)
   - [chain.inspect](#chaininspect)
   - [chain.inspectAsync](#chaininspectasync)
